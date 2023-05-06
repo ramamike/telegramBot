@@ -3,6 +3,7 @@ package com.springLearnig.telegramBot.service;
 import com.springLearnig.telegramBot.config.BotConfig;
 import com.springLearnig.telegramBot.model.IUserRepository;
 import com.springLearnig.telegramBot.model.User;
+import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -68,7 +69,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 case "/help":
                     startCommandReceived(chatId, HELP_TEXT);
                     break;
-                default: sendMessage(chatId, "Sorry. command doesn't recognised");
+                default: sendMessage(chatId, "Sorry, command doesn't recognised");
             }
         }
     }
@@ -90,7 +91,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
 
     private void startCommandReceived(long chatId, String name) {
-        String answer = "Hi, " + name + ")";
+        String answer = EmojiParser.parseToUnicode("Hi, " + name + ":blush:");
         sendMessage(chatId, answer);
     }
 
