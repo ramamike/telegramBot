@@ -56,7 +56,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.info("Sending message error: ", e);
+            log.error("Sending message error: ", e);
         }
 
     }
