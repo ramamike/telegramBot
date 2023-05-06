@@ -19,7 +19,9 @@ import java.util.List;
 public class TelegramBotService extends TelegramLongPollingBot {
 //   TelegranBotHook...
 
-    final BotConfig botConfig;
+    private final BotConfig botConfig;
+
+    private final String HELP_TEXT= "Choose command from menu";
 
     public TelegramBotService(BotConfig botConfig) {
         this.botConfig = botConfig;
@@ -54,6 +56,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
             switch (messageText){
                 case "/start":
                     startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+                    break;
+                case "/help":
+                    startCommandReceived(chatId, HELP_TEXT);
                     break;
                 default: sendMessage(chatId, "Sorry. command doesn't recognised");
             }
