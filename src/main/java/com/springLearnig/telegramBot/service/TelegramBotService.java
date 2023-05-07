@@ -9,11 +9,14 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -31,6 +34,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
     private IUserRepository userRepository;
 
     private final String HELP_TEXT = "Choose command from menu";
+    private final String YES_BUTTON = "YES_BUTTON";
+    private final String NO_BUTTON = "NO_BUTTON";
 
     public TelegramBotService(BotConfig botConfig, IUserRepository userRepository) {
         this.botConfig = botConfig;
@@ -71,9 +76,58 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 case "/help":
                     startCommandReceived(chatId, HELP_TEXT);
                     break;
+                case "/register":
+                    register(chatId);
+                    break;
                 default:
                     sendMessage(chatId, "Sorry, command doesn't recognised");
             }
+
+            
+        } else if (update.hasCallbackQuery()) {
+            String callBackData = update.getCallbackQuery().getData();
+            Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+            Long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+            if(callBackData.equals(YES_BUTTON)) {
+                sendEditMessageText(chatId, messageId, "You pressed YES");
+            } else if (callBackData.equals(NO_BUTTON)) {
+                sendEditMessageText(chatId, messageId, "You pressed NO");
+            }
+        }
+    }
+
+    private void register(Long chatId) {
+
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText("Do you want to register?");
+
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboardRows = new ArrayList<>();
+        List<InlineKeyboardButton> keyboardButtons = new ArrayList<>();
+
+        var button_1 = new InlineKeyboardButton();
+        button_1.setText("Yes");
+        button_1.setCallbackData(YES_BUTTON);
+
+        var button_2 = new InlineKeyboardButton();
+        button_2.setText("No");
+        button_2.setCallbackData(NO_BUTTON);
+
+        keyboardButtons.add(button_1);
+        keyboardButtons.add(button_2);
+
+        keyboardRows.add(keyboardButtons);
+
+        inlineKeyboardMarkup.setKeyboard(keyboardRows);
+
+        message.setReplyMarkup(inlineKeyboardMarkup);
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            log.error("Sending message error: ", e);
         }
     }
 
@@ -132,6 +186,18 @@ public class TelegramBotService extends TelegramLongPollingBot {
         return ReplyKeyboardMarkup.builder()
                 .keyboard(keyboardRows)
                 .build();
+    }
+
+    private void sendEditMessageText(Long chatId, Integer messageId, String text) {
+        EditMessageText editMessageText = new EditMessageText();
+        editMessageText.setChatId(chatId);
+        editMessageText.setText(text);
+        editMessageText.setMessageId(messageId);
+        try {
+            execute(editMessageText);
+        } catch (TelegramApiException e) {
+            log.error("Sending message error: ", e);
+        }
     }
 
 }
