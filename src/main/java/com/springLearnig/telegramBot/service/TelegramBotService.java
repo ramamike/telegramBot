@@ -13,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.sql.Timestamp;
@@ -28,11 +30,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     private IUserRepository userRepository;
 
-    private final String HELP_TEXT= "Choose command from menu";
+    private final String HELP_TEXT = "Choose command from menu";
 
     public TelegramBotService(BotConfig botConfig, IUserRepository userRepository) {
         this.botConfig = botConfig;
-        this.userRepository=userRepository;
+        this.userRepository = userRepository;
         List<BotCommand> commandList = new ArrayList<>();
         commandList.add(new BotCommand("/start", "get a welcome message"));
         commandList.add(new BotCommand("/mydata", "get your data stored"));
@@ -58,10 +60,10 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if(update.hasMessage() && update.getMessage().hasText() ) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
-            long chatId=update.getMessage().getChatId();
-            switch (messageText){
+            long chatId = update.getMessage().getChatId();
+            switch (messageText) {
                 case "/start":
                     registerUser(update.getMessage());
                     startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
@@ -69,13 +71,14 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 case "/help":
                     startCommandReceived(chatId, HELP_TEXT);
                     break;
-                default: sendMessage(chatId, "Sorry, command doesn't recognised");
+                default:
+                    sendMessage(chatId, "Sorry, command doesn't recognised");
             }
         }
     }
 
     private void registerUser(Message message) {
-        if(userRepository.findById(message.getChatId()).isEmpty()) {
+        if (userRepository.findById(message.getChatId()).isEmpty()) {
             var chatId = message.getChatId();
             var chat = message.getChat();
             User user = User.builder()
@@ -99,13 +102,36 @@ public class TelegramBotService extends TelegramLongPollingBot {
         SendMessage message = SendMessage.builder()
                 .chatId(chatId)
                 .text(messageToSend)
+                .replyMarkup(addKeyboardMarkup())
                 .build();
+
         try {
             execute(message);
         } catch (TelegramApiException e) {
             log.error("Sending message error: ", e);
         }
 
+    }
+
+    private ReplyKeyboardMarkup addKeyboardMarkup() {
+
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+
+        KeyboardRow keyboardRow_1 = new KeyboardRow();
+        keyboardRow_1.add("weather");
+        keyboardRow_1.add("random joke");
+
+        KeyboardRow keyboardRow_2 = new KeyboardRow();
+        keyboardRow_2.add("register");
+        keyboardRow_2.add("check my data");
+        keyboardRow_2.add("delete my data");
+
+        keyboardRows.add(keyboardRow_1);
+        keyboardRows.add(keyboardRow_2);
+
+        return ReplyKeyboardMarkup.builder()
+                .keyboard(keyboardRows)
+                .build();
     }
 
 }
