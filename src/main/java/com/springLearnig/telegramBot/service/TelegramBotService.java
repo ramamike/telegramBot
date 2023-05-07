@@ -1,10 +1,12 @@
 package com.springLearnig.telegramBot.service;
 
 import com.springLearnig.telegramBot.config.BotConfig;
+import com.springLearnig.telegramBot.model.INotificationRepository;
 import com.springLearnig.telegramBot.model.IUserRepository;
 import com.springLearnig.telegramBot.model.User;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -32,14 +34,16 @@ public class TelegramBotService extends TelegramLongPollingBot {
     private final BotConfig botConfig;
 
     private IUserRepository userRepository;
+    private INotificationRepository notificationRepository;
 
     private final String HELP_TEXT = "Choose command from menu";
     private final String YES_BUTTON = "YES_BUTTON";
     private final String NO_BUTTON = "NO_BUTTON";
 
-    public TelegramBotService(BotConfig botConfig, IUserRepository userRepository) {
+    public TelegramBotService(BotConfig botConfig, IUserRepository userRepository, INotificationRepository notificationRepository) {
         this.botConfig = botConfig;
         this.userRepository = userRepository;
+        this.notificationRepository = notificationRepository;
         List<BotCommand> commandList = new ArrayList<>();
         commandList.add(new BotCommand("/start", "get a welcome message"));
         commandList.add(new BotCommand("/mydata", "get your data stored"));
@@ -63,6 +67,17 @@ public class TelegramBotService extends TelegramLongPollingBot {
         return botConfig.getToken();
     }
 
+
+    @Scheduled(cron="${cron.scheduler}")
+    private void sendNotifications(){
+
+        var notifications = notificationRepository.findAll();
+        var users = userRepository.findAll();
+
+        notifications.forEach(notification -> {
+            send(notification.getText(), users);
+        });
+    }
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
