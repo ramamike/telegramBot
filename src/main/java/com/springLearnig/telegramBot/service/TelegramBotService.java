@@ -67,8 +67,14 @@ public class TelegramBotService extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
+            String messageCommand = messageText;
+            String textInMessage=messageText;
+            if (messageText.contains(" ")) {
+                messageCommand = messageText.substring(0, messageText.indexOf(" "));
+                textInMessage = messageText.substring(messageText.indexOf(" "));
+            }
             long chatId = update.getMessage().getChatId();
-            switch (messageText) {
+            switch (messageCommand) {
                 case "/start":
                     registerUser(update.getMessage());
                     startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
@@ -79,22 +85,32 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 case "/register":
                     register(chatId);
                     break;
+                case "/send":
+                    send(textInMessage, userRepository.findAll());
+                    break;
                 default:
                     sendMessage(chatId, "Sorry, command doesn't recognised");
             }
 
-            
+
         } else if (update.hasCallbackQuery()) {
             String callBackData = update.getCallbackQuery().getData();
             Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
             Long chatId = update.getCallbackQuery().getMessage().getChatId();
 
-            if(callBackData.equals(YES_BUTTON)) {
+            if (callBackData.equals(YES_BUTTON)) {
                 sendEditMessageText(chatId, messageId, "You pressed YES");
             } else if (callBackData.equals(NO_BUTTON)) {
                 sendEditMessageText(chatId, messageId, "You pressed NO");
             }
         }
+    }
+
+    private void send(String messageText, Iterable<User> users) {
+        String textToSend = EmojiParser.parseToUnicode(messageText);
+        users.forEach(user -> {
+            sendMessage(user.getId(), textToSend);
+        });
     }
 
     private void register(Long chatId) {
